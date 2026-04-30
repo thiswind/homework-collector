@@ -1,14 +1,23 @@
-# Rename app after first deploy: fly apps create <name> then set app = "<name>" here.
-app = "homework-collector-app"
-primary_region = "sin"
+# fly.toml app configuration file generated for homework-collector-python2026-spring on 2026-04-30T03:55:51Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'homework-collector-python2026-spring'
+primary_region = 'sin'
 
 [build]
+
+[[mounts]]
+  source = 'homework_data'
+  destination = '/data'
 
 [http_service]
   internal_port = 8080
   force_https = true
 
-# Create volume once: flyctl volumes create homework_data --region sin --size 1 -a homework-collector-app
-[[mounts]]
-  source = "homework_data"
-  destination = "/data"
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256
