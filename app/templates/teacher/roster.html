@@ -26,9 +26,13 @@
   <div class="sm:col-span-2">{{ add_form.submit(class_="rounded bg-green-600 px-3 py-2 text-white") }}</div>
 </form>
 <h2 class="mb-2 font-medium">作业打包下载</h2>
-<div class="mb-8 flex flex-wrap gap-2">
+<div class="mb-8 flex flex-wrap gap-3">
   {% for a in course.assignments %}
-  <a href="{{ url_for('teacher.download_zip', assignment_id=a.id) }}" class="rounded border px-3 py-2 text-sm">{{ a.title }} ZIP</a>
+  <div class="flex flex-wrap items-center gap-2 rounded border border-slate-200 bg-white px-2 py-2">
+    <span class="text-sm font-medium text-slate-800">{{ a.title }}</span>
+    <a href="{{ url_for('teacher.assignment_submission_status', assignment_id=a.id) }}" class="text-sm text-indigo-600 hover:underline">提交进度</a>
+    <a href="{{ url_for('teacher.download_zip', assignment_id=a.id) }}" class="rounded border border-slate-300 px-2 py-1 text-sm hover:bg-slate-50">ZIP</a>
+  </div>
   {% endfor %}
 </div>
 <h2 class="mb-2 font-medium">当前名册（密码列为哈希）</h2>
@@ -48,10 +52,16 @@
         <td class="px-2 py-2">{{ r.姓名 }}</td>
         <td class="max-w-xs truncate px-2 py-2 font-mono text-xs">{{ r['密码哈希'] }}</td>
         <td class="px-2 py-2">
-          <form method="post" action="{{ url_for('teacher.roster_delete', student_id=r.学号) }}" onsubmit="return confirm('确定删除该学生？');">
-            {{ delete_form.hidden_tag() }}
-            {{ delete_form.submit(class_="text-xs text-red-700 underline") }}
-          </form>
+          <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+            <form method="post" action="{{ url_for('teacher.roster_reset_password', student_id=r.学号) }}" onsubmit="return confirm('确定重置该学生密码？将生成新密码，旧密码立即失效。');">
+              {{ reset_password_form.hidden_tag() }}
+              {{ reset_password_form.submit(class_="text-xs text-indigo-700 underline") }}
+            </form>
+            <form method="post" action="{{ url_for('teacher.roster_delete', student_id=r.学号) }}" onsubmit="return confirm('确定删除该学生？');">
+              {{ delete_form.hidden_tag() }}
+              {{ delete_form.submit(class_="text-xs text-red-700 underline") }}
+            </form>
+          </div>
         </td>
       </tr>
       {% endfor %}

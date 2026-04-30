@@ -39,6 +39,10 @@ class DeleteRowForm(FlaskForm):
     submit = SubmitField("删除")
 
 
+class ResetPasswordForm(FlaskForm):
+    submit = SubmitField("重置密码")
+
+
 class CourseSaveForm(FlaskForm):
     course_id = StringField("课程代码 course_id", validators=[DataRequired()])
     course_title = StringField("课程名称", validators=[DataRequired()])

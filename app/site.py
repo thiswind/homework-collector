@@ -35,6 +35,7 @@ from app.forms import (
     CourseSaveForm,
     DeleteRowForm,
     EnrollForm,
+    ResetPasswordForm,
     RosterImportForm,
     StudentLoginForm,
     TeacherLoginForm,
@@ -392,6 +393,7 @@ def roster_view():
         import_form=RosterImportForm(),
         add_form=AddStudentForm(),
         delete_form=DeleteRowForm(),
+        reset_password_form=ResetPasswordForm(),
     )
 
 
@@ -510,6 +512,87 @@ def roster_delete(student_id: str):
         remove_student_from_manifest(mp_path, sid)
     flash("已删除学生及其作业记录。", "success")
     return redirect(url_for("teacher.roster_view"))
+
+
+@bp_teacher.route("/roster/reset-password/<student_id>", methods=["POST"])
+def roster_reset_password(student_id: str):
+    redir = teacher_required()
+    if redir:
+        return redir
+    form = ResetPasswordForm()
+    if not form.validate_on_submit():
+        flash("提交无效。", "danger")
+        return redirect(url_for("teacher.roster_view"))
+    cfg = _cfg()
+    sid = student_id.strip()
+
+    def mutator(rows):
+        row = find_student(rows, sid)
+        if row is None:
+            raise ValueError("名册中无此学号")
+        plain = _generate_password()
+        row["密码哈希"] = generate_password_hash(plain)
+        session["_teacher_reset_plain_password"] = plain
+        session["_teacher_reset_student_id"] = sid
+        return rows
+
+    try:
+        update_roster(cfg.ROSTER_PATH, mutator)
+    except ValueError as e:
+        flash(str(e), "danger")
+        return redirect(url_for("teacher.roster_view"))
+    flash("已生成新密码，请仅在安全环境下展示给学生。", "success")
+    return redirect(url_for("teacher.roster_reset_done"))
+
+
+@bp_teacher.route("/roster/reset-done")
+def roster_reset_done():
+    redir = teacher_required()
+    if redir:
+        return redir
+    plain = session.pop("_teacher_reset_plain_password", None)
+    sid = session.pop("_teacher_reset_student_id", None)
+    if not plain or not sid:
+        flash("会话已过期或无效。", "warning")
+        return redirect(url_for("teacher.roster_view"))
+    return render_template(
+        "teacher/reset_password_done.html",
+        plain_password=plain,
+        student_id=sid,
+    )
+
+
+@bp_teacher.route("/assignments/<assignment_id>/status")
+def assignment_submission_status(assignment_id: str):
+    redir = teacher_required()
+    if redir:
+        return redir
+    cfg = _cfg()
+    a = _assignment_by_id(assignment_id)
+    if not a:
+        abort(404)
+    rows = load_roster(cfg.ROSTER_PATH)
+    mp_path = manifest_path_for(cfg.STORAGE_ROOT, assignment_id)
+    man = load_manifest(mp_path)
+    status_rows: list[dict] = []
+    for row in rows:
+        sid = row.get("学号", "").strip()
+        st = man.get(sid) if sid else None
+        submitted = bool(st and st.get("filename"))
+        status_rows.append(
+            {
+                "row": row,
+                "submitted": submitted,
+                "first_upload_at": (st.get("first_upload_at", "") if st else ""),
+                "last_updated_at": (st.get("last_updated_at", "") if st else ""),
+                "filename": (st.get("filename", "") if st else ""),
+            }
+        )
+    return render_template(
+        "teacher/assignment_status.html",
+        assignment=a,
+        status_rows=status_rows,
+    )
 
 
 @bp_teacher.route("/assignments/<assignment_id>/download.zip")

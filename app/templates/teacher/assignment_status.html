@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+  <h1 class="text-xl font-semibold">提交进度 — {{ assignment.title }}</h1>
+  <a href="{{ url_for('teacher.roster_view') }}" class="text-sm text-indigo-600 hover:underline">返回名册</a>
+</div>
+<p class="mb-2 text-sm text-slate-600">作业 ID：<code class="rounded bg-slate-100 px-1">{{ assignment.id }}</code></p>
+<p class="mb-4 text-sm text-slate-600">以下名单来自当前名册；是否已交依据该作业的 <code class="rounded bg-slate-100 px-1">_manifest.json</code>。</p>
+
+<div class="overflow-x-auto rounded border bg-white">
+  <table class="min-w-[640px] w-full text-left text-sm">
+    <thead class="bg-slate-100">
+      <tr>
+        <th class="whitespace-nowrap px-3 py-2">序号</th>
+        <th class="whitespace-nowrap px-3 py-2">学号</th>
+        <th class="whitespace-nowrap px-3 py-2">姓名</th>
+        <th class="whitespace-nowrap px-3 py-2">专业</th>
+        <th class="whitespace-nowrap px-3 py-2">状态</th>
+        <th class="whitespace-nowrap px-3 py-2">最后更新 (UTC)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in status_rows %}
+      {% set r = item.row %}
+      <tr class="border-t" data-student-id="{{ r.学号 }}" data-last-updated="{{ item.last_updated_at or '' }}">
+        <td class="px-3 py-2">{{ r.序号 }}</td>
+        <td class="font-mono px-3 py-2">{{ r.学号 }}</td>
+        <td class="px-3 py-2">{{ r.姓名 }}</td>
+        <td class="px-3 py-2">{{ r.专业 }}</td>
+        <td class="px-3 py-2">
+          {% if item.submitted %}
+          <span class="rounded bg-green-100 px-2 py-0.5 text-green-900" data-testid="status-submitted">已交</span>
+          {% else %}
+          <span class="rounded bg-amber-100 px-2 py-0.5 text-amber-900" data-testid="status-missing">未交</span>
+          {% endif %}
+        </td>
+        <td class="max-w-xs truncate px-3 py-2 font-mono text-xs text-slate-600">{{ item.last_updated_at or "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
