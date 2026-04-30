@@ -1,6 +1,6 @@
 # Homework Collector
 
-File-backed Flask web app for course homework PDF collection (no SQL database). See `cursor-agent-team/ai_workspace/plans/PLAN-B-001.md` for full specification; follow-up **teacher course editor** in `cursor-agent-team/ai_workspace/plans/PLAN-B-002.md`.
+File-backed Flask web app for course homework PDF collection (no SQL database). This **public** repository ships the runnable app and tests; longer design/plan documents may live outside this tree (e.g. internal agent workspace). **PLAN-B-002** scope: teacher web editor for `course.yaml` + Git publication.
 
 ## Source repository
 
