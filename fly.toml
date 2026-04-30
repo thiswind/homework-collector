@@ -1,0 +1,14 @@
+# Rename app after first deploy: fly apps create <name> then set app = "<name>" here.
+app = "homework-collector-app"
+primary_region = "sin"
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+
+# Create volume once: flyctl volumes create homework_data --region sin --size 1 -a homework-collector-app
+[[mounts]]
+  source = "homework_data"
+  destination = "/data"

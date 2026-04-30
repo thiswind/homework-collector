@@ -1,0 +1,9 @@
+course_id: MTECH-2026-SPRING
+course_title: "Course Homework Submission System (Demo)"
+assignments:
+  - id: hw01
+    title: "Assignment 1"
+    order: 1
+  - id: hw02
+    title: "Assignment 2"
+    order: 2

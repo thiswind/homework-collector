@@ -1,0 +1,13 @@
+# Cursor AI Agent Team Framework (submodule)
+cursor-agent-team
+
+# Homework collector app
+.cursor/
+temp_script/*
+!temp_script/.gitkeep
+__pycache__/
+.pytest_cache/
+.env
+data/
+*.pyc
+.DS_Store

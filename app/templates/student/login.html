@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block body %}
+<h1 class="mb-4 text-xl font-semibold">学生登录</h1>
+<form method="post" class="max-w-md space-y-4">
+  {{ form.hidden_tag() }}
+  <div>
+    <label class="block text-sm font-medium">{{ form.student_id.label }}</label>
+    {{ form.student_id(class_="mt-1 w-full rounded border px-3 py-2") }}
+  </div>
+  <div>
+    <label class="block text-sm font-medium">{{ form.password.label }}</label>
+    {{ form.password(class_="mt-1 w-full rounded border px-3 py-2") }}
+  </div>
+  {{ form.submit(class_="rounded-lg bg-indigo-600 px-4 py-2 text-white") }}
+</form>
+{% endblock %}

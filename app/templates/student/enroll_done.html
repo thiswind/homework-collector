@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block body %}
+<h1 class="mb-4 text-xl font-semibold text-amber-800">请保存初始密码（仅此一次）</h1>
+<p class="mb-2 text-sm text-slate-600">学号：<strong>{{ student_id }}</strong></p>
+<p class="mb-6 break-all rounded-lg border-2 border-amber-400 bg-amber-50 p-4 font-mono text-lg">{{ plain_password }}</p>
+<p class="text-sm text-red-700">请勿关闭页面直至您已保存密码。关闭后只能联系教师重置。</p>
+<a href="{{ url_for('student.login') }}" class="mt-6 inline-block rounded-lg bg-indigo-600 px-4 py-2 text-white">前往登录</a>
+{% endblock %}

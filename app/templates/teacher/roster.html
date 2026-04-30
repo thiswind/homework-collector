@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block body %}
+<h1 class="mb-4 text-xl font-semibold">名册管理</h1>
+<p class="mb-4 flex flex-wrap gap-3 text-sm">
+  <a href="{{ url_for('teacher.course_edit') }}" class="text-indigo-600 hover:underline">课程与作业设置</a>
+  <a href="{{ url_for('teacher.teacher_logout') }}" class="text-indigo-600 hover:underline">退出教师</a>
+</p>
+<div class="mb-6 flex flex-wrap gap-3">
+  <a href="{{ url_for('teacher.roster_template') }}" class="rounded border px-3 py-2 text-sm">下载 CSV 模板</a>
+  <a href="{{ url_for('teacher.export_full') }}" class="rounded border px-3 py-2 text-sm">导出全班登记表 CSV</a>
+</div>
+<h2 class="mb-2 font-medium">导入 CSV（覆盖当前名册）</h2>
+<form method="post" action="{{ url_for('teacher.roster_import') }}" enctype="multipart/form-data" class="mb-8 flex flex-wrap items-end gap-2">
+  {{ import_form.hidden_tag() }}
+  {{ import_form.file(class_="text-sm") }}
+  {{ import_form.submit(class_="rounded bg-indigo-600 px-3 py-2 text-sm text-white") }}
+</form>
+<h2 class="mb-2 font-medium">手动添加学生</h2>
+<form method="post" action="{{ url_for('teacher.roster_add') }}" class="mb-8 grid max-w-xl gap-2 sm:grid-cols-2">
+  {{ add_form.hidden_tag() }}
+  {{ add_form.seq.label(class_="text-sm") }} {{ add_form.seq(class_="rounded border px-2 py-1") }}
+  {{ add_form.college.label(class_="text-sm") }} {{ add_form.college(class_="rounded border px-2 py-1") }}
+  {{ add_form.major.label(class_="text-sm") }} {{ add_form.major(class_="rounded border px-2 py-1") }}
+  {{ add_form.student_id.label(class_="text-sm") }} {{ add_form.student_id(class_="rounded border px-2 py-1") }}
+  {{ add_form.name.label(class_="text-sm") }} {{ add_form.name(class_="rounded border px-2 py-1") }}
+  <div class="sm:col-span-2">{{ add_form.submit(class_="rounded bg-green-600 px-3 py-2 text-white") }}</div>
+</form>
+<h2 class="mb-2 font-medium">作业打包下载</h2>
+<div class="mb-8 flex flex-wrap gap-2">
+  {% for a in course.assignments %}
+  <a href="{{ url_for('teacher.download_zip', assignment_id=a.id) }}" class="rounded border px-3 py-2 text-sm">{{ a.title }} ZIP</a>
+  {% endfor %}
+</div>
+<h2 class="mb-2 font-medium">当前名册（密码列为哈希）</h2>
+<div class="overflow-x-auto rounded border bg-white">
+  <table class="min-w-full text-left text-sm">
+    <thead class="bg-slate-100"><tr>
+      <th class="px-2 py-2">序号</th><th class="px-2 py-2">学院</th><th class="px-2 py-2">专业</th>
+      <th class="px-2 py-2">学号</th><th class="px-2 py-2">姓名</th><th class="px-2 py-2">密码哈希</th><th class="px-2 py-2"></th>
+    </tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr class="border-t">
+        <td class="px-2 py-2">{{ r.序号 }}</td>
+        <td class="px-2 py-2">{{ r.学院 }}</td>
+        <td class="px-2 py-2">{{ r.专业 }}</td>
+        <td class="px-2 py-2 font-mono">{{ r.学号 }}</td>
+        <td class="px-2 py-2">{{ r.姓名 }}</td>
+        <td class="max-w-xs truncate px-2 py-2 font-mono text-xs">{{ r['密码哈希'] }}</td>
+        <td class="px-2 py-2">
+          <form method="post" action="{{ url_for('teacher.roster_delete', student_id=r.学号) }}" onsubmit="return confirm('确定删除该学生？');">
+            {{ delete_form.hidden_tag() }}
+            {{ delete_form.submit(class_="text-xs text-red-700 underline") }}
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
