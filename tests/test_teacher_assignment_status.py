@@ -19,8 +19,8 @@ def test_teacher_status_page_matches_manifest(client, app):
     cfg = app.extensions["cfg"]
     aid = "hw01"
     mp = manifest_path_for(cfg.STORAGE_ROOT, aid)
-    submitted_sid = "12024215112"
-    other_sid = "12024215142"
+    submitted_sid = "2026999901"
+    other_sid = "2026999902"
     update_manifest(mp, submitted_sid, "demo_hw01.pdf", replace=True)
     man = load_manifest(mp)
     assert man[submitted_sid]["filename"] == "demo_hw01.pdf"

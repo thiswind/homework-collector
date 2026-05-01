@@ -12,7 +12,7 @@ def test_teacher_reset_password_updates_hash(client, app):
     with client.session_transaction() as sess:
         sess["teacher"] = True
     cfg = app.extensions["cfg"]
-    sid = "12024215112"
+    sid = "2026999901"
     rows_before = load_roster(cfg.ROSTER_PATH)
     row = find_student(rows_before, sid)
     assert row is not None
@@ -53,7 +53,7 @@ def test_teacher_reset_unknown_student_redirects(client, app):
 
 def test_anonymous_cannot_reset_password(client):
     r = client.post(
-        "/teacher/roster/reset-password/12024215112",
+        "/teacher/roster/reset-password/2026999901",
         data={"submit": "1"},
         follow_redirects=False,
     )
