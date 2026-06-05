@@ -1,15 +1,17 @@
 {% extends "base.html" %}
 {% block body %}
-<h1 class="mb-4 text-xl font-semibold">课程与作业设置</h1>
-<p class="mb-4 text-sm text-slate-600">配置保存在服务器上的 <code class="rounded bg-slate-100 px-1">course.yaml</code>（默认与名册、作业文件同在持久化目录）。修改作业 id 后，旧的 <code>storage/旧id</code> 目录不会自动删除。</p>
-<p class="mb-4"><a href="{{ url_for('teacher.roster_view') }}" class="text-sm text-indigo-600 hover:underline">返回名册</a>
-  · <a href="{{ url_for('teacher.teacher_logout') }}" class="text-sm text-indigo-600 hover:underline">退出教师</a></p>
+<h1 class="mb-4 text-xl font-semibold">{{ course.course_title }} — 课程与作业设置</h1>
+<p class="mb-4 text-sm text-slate-600">修改作业 id 后，旧的 storage 子目录不会自动删除。</p>
+<p class="mb-4 flex flex-wrap gap-3 text-sm">
+  <a href="{{ url_for('teacher.course_dashboard', course_id=course.course_id) }}" class="text-indigo-600 hover:underline">返回课程</a>
+  <a href="{{ url_for('teacher.roster_view', course_id=course.course_id) }}" class="text-indigo-600 hover:underline">名册管理</a>
+</p>
 
-<form method="post" action="{{ url_for('teacher.course_edit') }}" class="max-w-2xl space-y-4">
+<form method="post" action="{{ url_for('teacher.course_edit', course_id=course.course_id) }}" class="max-w-3xl space-y-4">
   {{ form.hidden_tag() }}
   <div>
     {{ form.course_id.label(class_="mb-1 block text-sm font-medium") }}
-    {{ form.course_id(class_="w-full rounded border px-3 py-2") }}
+    {{ form.course_id(class_="w-full rounded border px-3 py-2", readonly=true) }}
   </div>
   <div>
     {{ form.course_title.label(class_="mb-1 block text-sm font-medium") }}
@@ -18,17 +20,37 @@
 
   <h2 class="pt-2 text-lg font-medium">作业列表</h2>
   <p class="text-sm text-slate-600">每项：id（英文/数字/短横线，用于目录名）、显示标题。</p>
-  <div class="space-y-2 rounded border bg-white p-3">
+  <div class="space-y-3 rounded border bg-white p-3">
     {% for a in assignment_rows %}
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <input type="text" name="assignment_id" value="{{ a.id or '' }}" placeholder="hw01" class="rounded border px-2 py-1 text-sm sm:w-36" />
-      <input type="text" name="assignment_title" value="{{ a.title or '' }}" placeholder="第一次作业" class="flex-1 rounded border px-2 py-1 text-sm" />
+    <div class="rounded border border-slate-200 p-3">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <input type="text" name="assignment_id" value="{{ a.id or '' }}" placeholder="hw01" class="rounded border px-2 py-1 text-sm sm:w-36" />
+        <input type="text" name="assignment_title" value="{{ a.title or '' }}" placeholder="第一次作业" class="flex-1 rounded border px-2 py-1 text-sm" />
+      </div>
+      {% if a.id %}
+      <div class="mt-3 rounded bg-slate-50 p-2 text-sm">
+        {% if a.template %}
+        <p>模板：<a href="{{ url_for('teacher.teacher_template_download', course_id=course.course_id, assignment_id=a.id) }}" class="text-indigo-600 hover:underline">{{ a.template.original_name }}</a></p>
+        <form method="post" action="{{ url_for('teacher.template_delete', course_id=course.course_id, assignment_id=a.id) }}" class="mt-2 inline-block">
+          {{ delete_template_form.hidden_tag() }}
+          {{ delete_template_form.submit(class_="rounded border border-red-300 px-2 py-1 text-xs text-red-700") }}
+        </form>
+        {% else %}
+        <p class="text-slate-600">尚未上传模板。</p>
+        {% endif %}
+        <form method="post" action="{{ url_for('teacher.template_upload', course_id=course.course_id, assignment_id=a.id) }}" enctype="multipart/form-data" class="mt-2 flex flex-wrap items-center gap-2">
+          {{ upload_form.hidden_tag() }}
+          {{ upload_form.file(class_="text-xs") }}
+          {{ upload_form.submit(class_="rounded border px-2 py-1 text-xs") }}
+        </form>
+      </div>
+      {% endif %}
     </div>
     {% endfor %}
   </div>
   <div class="flex flex-wrap gap-2">
     {{ form.submit(class_="rounded bg-indigo-600 px-4 py-2 text-white") }}
-    <a href="{{ url_for('teacher.course_edit', add=1) }}" class="rounded border border-slate-300 px-4 py-2 text-sm">添加一行作业</a>
+    <a href="{{ url_for('teacher.course_edit', course_id=course.course_id, add=1) }}" class="rounded border border-slate-300 px-4 py-2 text-sm">添加一行作业</a>
   </div>
 </form>
 {% endblock %}

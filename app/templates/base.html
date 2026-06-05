@@ -3,21 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}{{ course_title or 'Homework' }}{% endblock %}</title>
+  <title>{% block title %}{{ course.course_title if course is defined and course else '作业提交系统' }}{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900">
   <header class="border-b bg-white shadow-sm">
-    <div class="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-      <a href="{{ url_for('public.index') }}" class="text-lg font-semibold text-indigo-700">{{ course_title or '作业提交' }}</a>
+    <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <a href="{{ url_for('public.index') }}" class="text-lg font-semibold text-indigo-700">作业提交系统</a>
       <nav class="flex flex-wrap gap-3 text-sm">
-        <a class="text-indigo-600 hover:underline" href="{{ url_for('student.login') }}">学生登录</a>
-        <a class="text-indigo-600 hover:underline" href="{{ url_for('student.enroll') }}">初次注册</a>
+        <a class="text-indigo-600 hover:underline" href="{{ url_for('public.index') }}">课程列表</a>
         <a class="text-indigo-600 hover:underline" href="{{ url_for('teacher.teacher_login') }}">教师</a>
+        {% if session.get('teacher') %}
+        <a class="text-indigo-600 hover:underline" href="{{ url_for('teacher.courses') }}">课程管理</a>
+        <a class="text-indigo-600 hover:underline" href="{{ url_for('teacher.teacher_logout') }}">退出教师</a>
+        {% endif %}
       </nav>
     </div>
   </header>
-  <main class="mx-auto max-w-4xl px-4 py-6">
+  <main class="mx-auto max-w-5xl px-4 py-6">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="mb-4 space-y-2">
@@ -25,6 +28,7 @@
             <div class="rounded-lg border px-3 py-2 text-sm
               {% if category == 'danger' %}border-red-300 bg-red-50 text-red-900
               {% elif category == 'success' %}border-green-300 bg-green-50 text-green-900
+              {% elif category == 'warning' %}border-amber-300 bg-amber-50 text-amber-900
               {% else %}border-slate-200 bg-white{% endif %}">{{ message }}</div>
           {% endfor %}
         </div>

@@ -43,8 +43,23 @@ class ResetPasswordForm(FlaskForm):
     submit = SubmitField("重置密码")
 
 
+class CourseCreateForm(FlaskForm):
+    course_id = StringField("课程代码 course_id", validators=[DataRequired()])
+    course_title = StringField("课程名称", validators=[DataRequired()])
+    submit = SubmitField("创建课程")
+
+
 class CourseSaveForm(FlaskForm):
     course_id = StringField("课程代码 course_id", validators=[DataRequired()])
     course_title = StringField("课程名称", validators=[DataRequired()])
     submit = SubmitField("保存课程配置")
+
+
+class TemplateUploadForm(FlaskForm):
+    file = FileField("模板文件", validators=[DataRequired()])
+    submit = SubmitField("上传模板")
+
+
+class DeleteTemplateForm(FlaskForm):
+    submit = SubmitField("删除模板")
 

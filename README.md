@@ -1,34 +1,49 @@
 # Homework Collector
 
-File-backed Flask web app for course homework PDF collection (no SQL database). This **public** repository ships the runnable app and tests; longer design/plan documents may live outside this tree (e.g. internal agent workspace). **PLAN-B-002** scope: teacher web editor for `course.yaml` + Git publication.
+File-backed Flask web app for collecting course homework PDFs. It supports multiple courses without a SQL database: each course has its own roster, assignment config, templates, uploads, and submission manifests.
 
-## Source repository
+## Data layout
 
-- **Public GitHub**: https://github.com/thiswind/homework-collector  
-- Default branch: `master`. **Never commit** `.env`, `data/`, or Fly/teacher secrets — use `flyctl secrets set` and `.gitignore`.
+Runtime state lives under `DATA_DIR`:
 
-## Course configuration (teacher UI)
+```text
+DATA_DIR/
+  courses.yaml
+  courses/
+    <course_id>/
+      course.yaml
+      roster.csv
+      templates/
+        <assignment_id>/
+          <template file>
+      storage/
+        <assignment_id>/
+          _manifest.json
+          *.pdf
+```
 
-- Runtime **`course.yaml`** defaults to **`$DATA_DIR/course.yaml`** (same persistent directory as `roster.csv` and `storage/` on Fly). Override with env **`COURSE_CONFIG`**.
-- On first boot, if that file is missing, the app copies the bundled template from `config/course.yaml` in the image.
-- After **teacher login** → **课程与作业设置** → edit `course_id`, course title, and each assignment (`id` + display title). Changing an assignment **id** does not delete old `storage/<old_id>/` folders automatically.
+On first boot, the app creates a default course from `config/course.yaml` and seeds `roster.csv` from `点名册.csv` when present.
 
-## Runtime
+## Main workflows
 
-- Python 3.12+
-- Dependencies: `requirements.txt`
+- Home page lists active courses.
+- Student enters a course, registers once with 学号+姓名, receives a one-time initial password, then logs in to upload or replace PDF submissions.
+- Teacher logs in globally, creates courses, manages each course roster, edits assignments, uploads assignment templates, views submission status, exports CSV, and downloads ZIP bundles.
+
+Assignment templates support `.pdf`, `.doc`, `.docx`, `.xls`, `.xlsx`, `.ppt`, `.pptx`, and `.zip`.
 
 ## Local development
 
 ```bash
-conda activate base
+python3 -m venv .venv
+. .venv/bin/activate
 pip install -r requirements-dev.txt
 export SECRET_KEY="dev-secret"
 export TEACHER_PASSWORD="your-teacher-password"
 flask --app app:create_app run --debug
 ```
 
-Open http://127.0.0.1:5000 — health check: http://127.0.0.1:5000/health
+Open `http://127.0.0.1:5000`; health check: `http://127.0.0.1:5000/health`.
 
 ## Tests
 
@@ -36,57 +51,47 @@ Open http://127.0.0.1:5000 — health check: http://127.0.0.1:5000/health
 pytest
 ```
 
-## Docker (production-like)
-
-```bash
-docker build -t homework-collector .
-mkdir -p data
-docker run --rm -d --name hc-local -p 8080:8080 \
-  -v "$(pwd)/data:/data" \
-  -e SECRET_KEY=replace-me \
-  -e TEACHER_PASSWORD=replace-teacher \
-  homework-collector
-curl -sfS http://127.0.0.1:8080/health
-docker rm -f hc-local
-```
-
-Persistent roster and uploads live under `DATA_DIR` (default `/data` in the image). Mount a host directory to `/data` for local smoke tests so `roster.csv` survives container restarts.
-
-## Fly.io (Phase I)
-
-1. `flyctl auth login` then `flyctl auth whoami`
-2. Edit `fly.toml` — set unique `app` name; adjust `primary_region` if needed
-3. Create an app: `flyctl apps create <name>`
-4. Create a volume for persistent roster/storage: `flyctl volumes create homework_data --region sin --size 1 -a <app>`
-5. Volume mount is already declared in `fly.toml` (`[[mounts]]` → `/data`). If you previously created `homework_data` in another region (e.g. `nrt`), create a **new** volume in `sin` for this app; Fly volumes are region-bound.
-6. Set secrets: `flyctl secrets set SECRET_KEY=... TEACHER_PASSWORD=...`
-7. `flyctl deploy` — if the **remote builder** stalls or errors (e.g. depot handshake / deadline exceeded), retry with **`flyctl deploy --local-only`** (requires local Docker such as OrbStack).
-8. **Single Machine in `sin`**: run `flyctl machines list`; if more than one Machine is running, run `flyctl scale count 1 --region sin --yes` (or remove extra machines per Fly docs).
-9. Verify: `curl -sfS https://<app>.fly.dev/health`
-
-### Fly acceptance checklist (product owner / UAT on HTTPS only)
-
-1. `curl -sfS https://<app>.fly.dev/health` returns JSON with `"status":"ok"`.
-2. Open `https://<app>.fly.dev/` in a browser; no TLS warnings.
-3. Teacher login with secrets you set via `flyctl secrets set`.
-4. Optional: student enroll → upload PDF → teacher ZIP download (see manual E2E below).
-
-Automated gates (pytest, `docker build` / local `curl`) are run on the implementation machine or CI; **final sign-off is this HTTPS checklist**, not localhost.
-
-### Fly verification (manual E2E)
-
-1. Open `https://<app>.fly.dev/`
-2. Teacher login → download roster template → optional import
-3. Student: enroll with valid 学号+姓名 from roster → save one-time password
-4. Student: login → upload PDF for hw01
-5. Teacher: download ZIP for hw01 → contains `pdfs/` PDFs + `ledger.csv`
-
 ## Environment variables
 
-See `.env.example`. Critical: `SECRET_KEY`, `TEACHER_USERNAME`, `TEACHER_PASSWORD`, **`COURSE_CONFIG`** (optional; defaults to `DATA_DIR/course.yaml`), paths under `DATA_DIR` on persistent disk for Fly.
+See `.env.example`. Important production values:
 
-## Tooling versions (recorded at implementation)
+- `SECRET_KEY`: strong random Flask secret.
+- `TEACHER_USERNAME`: teacher login username, default `teacher`.
+- `TEACHER_PASSWORD`: strong teacher password; never commit it.
+- `DATA_DIR`: persistent data directory.
+- `MAX_UPLOAD_MB`: student PDF upload size limit, default `20`.
+- `MAX_TEMPLATE_MB`: assignment template size limit, default `50`.
+- `PERMANENT_SESSION_LIFETIME`: session lifetime in seconds, default `28800`.
 
-- Python 3.12
-- Flask 3.x, Flask-WTF 1.3.x
-- Docker base `python:3.12-slim-bookworm`
+Legacy single-course path variables remain for migration compatibility, but new course operations use the `DATA_DIR/courses/` layout.
+
+## openEuler server deployment
+
+Verified target shape: openEuler 22.03, Python 3.9, nginx, systemd, no Docker/Podman, no git. Deploy by source tarball and run with venv + gunicorn behind nginx.
+
+Non-destructive application smoke command pattern:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt gunicorn
+env DATA_DIR=/home/thiswind/homework-data \
+  SECRET_KEY='replace-with-strong-random' \
+  TEACHER_PASSWORD='replace-with-strong-password' \
+  .venv/bin/gunicorn -b 127.0.0.1:18080 'app:create_app()'
+```
+
+Then verify from the server:
+
+```bash
+curl -sfS http://127.0.0.1:18080/health
+```
+
+Installing a permanent systemd service or nginx reverse proxy requires root/sudo approval and should not be done blindly. Recommended production bind is `127.0.0.1:18080`, with nginx proxying public port 80 to that local port.
+
+## Docker/Fly notes
+
+The repository still contains Docker/Fly files from the original deployment path, but the current openEuler target uses venv + gunicorn + nginx because Docker/Podman are not installed on the server.
+
+## Security notes
+
+Do not commit `.env`, `data/`, runtime course data, student submissions, or production secrets. Set `SECRET_KEY` and `TEACHER_PASSWORD` through the deployment environment.

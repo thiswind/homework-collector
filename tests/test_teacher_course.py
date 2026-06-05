@@ -1,7 +1,8 @@
-"""PLAN-B-002 Phases B/C: teacher course editor auth and save."""
+"""Teacher course management auth and save."""
 from __future__ import annotations
 
 from app.course_loader import load_course_config
+from app.course_registry import course_config_path
 
 
 def test_anonymous_redirects_course(client):
@@ -17,16 +18,16 @@ def test_student_cannot_open_course(client):
     assert r.status_code == 302
 
 
-def test_teacher_save_updates_file_and_extension(client, app):
+def test_teacher_save_updates_course_file(client, app, default_course_id):
     with client.session_transaction() as sess:
         sess["teacher"] = True
     cfg = app.extensions["cfg"]
-    path = cfg.COURSE_CONFIG
+    path = course_config_path(cfg.DATA_DIR, default_course_id)
     r = client.post(
-        "/teacher/course",
+        f"/teacher/courses/{default_course_id}/settings",
         data={
             "csrf_token": "dummy",
-            "course_id": "edited-course",
+            "course_id": default_course_id,
             "course_title": "Edited Title",
             "assignment_id": ["ea1"],
             "assignment_title": ["Essay A"],
@@ -36,7 +37,6 @@ def test_teacher_save_updates_file_and_extension(client, app):
     )
     assert r.status_code == 302
     data = load_course_config(path)
-    assert data["course_id"] == "edited-course"
+    assert data["course_id"] == default_course_id
     assert data["course_title"] == "Edited Title"
     assert data["assignments"][0]["id"] == "ea1"
-    assert app.extensions["course_cfg"]["course_id"] == "edited-course"

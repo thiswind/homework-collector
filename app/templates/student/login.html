@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block body %}
-<h1 class="mb-4 text-xl font-semibold">学生登录</h1>
+<h1 class="mb-2 text-xl font-semibold">{{ course.course_title }} — 学生登录</h1>
+<p class="mb-4 text-sm text-slate-600">学生账号按课程独立管理。</p>
 <form method="post" class="max-w-md space-y-4">
   {{ form.hidden_tag() }}
   <div>
@@ -13,4 +14,5 @@
   </div>
   {{ form.submit(class_="rounded-lg bg-indigo-600 px-4 py-2 text-white") }}
 </form>
+<p class="mt-4"><a href="{{ url_for('student.enroll', course_id=course.course_id) }}" class="text-sm text-indigo-600 hover:underline">初次注册</a></p>
 {% endblock %}

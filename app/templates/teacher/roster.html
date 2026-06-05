@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 {% block body %}
-<h1 class="mb-4 text-xl font-semibold">名册管理</h1>
+<h1 class="mb-4 text-xl font-semibold">{{ course.course_title }} — 名册管理</h1>
 <p class="mb-4 flex flex-wrap gap-3 text-sm">
-  <a href="{{ url_for('teacher.course_edit') }}" class="text-indigo-600 hover:underline">课程与作业设置</a>
-  <a href="{{ url_for('teacher.teacher_logout') }}" class="text-indigo-600 hover:underline">退出教师</a>
+  <a href="{{ url_for('teacher.course_dashboard', course_id=course.course_id) }}" class="text-indigo-600 hover:underline">返回课程</a>
+  <a href="{{ url_for('teacher.course_edit', course_id=course.course_id) }}" class="text-indigo-600 hover:underline">课程与作业设置</a>
 </p>
 <div class="mb-6 flex flex-wrap gap-3">
-  <a href="{{ url_for('teacher.roster_template') }}" class="rounded border px-3 py-2 text-sm">下载 CSV 模板</a>
-  <a href="{{ url_for('teacher.export_full') }}" class="rounded border px-3 py-2 text-sm">导出全班登记表 CSV</a>
+  <a href="{{ url_for('teacher.roster_template', course_id=course.course_id) }}" class="rounded border px-3 py-2 text-sm">下载 CSV 模板</a>
+  <a href="{{ url_for('teacher.export_full', course_id=course.course_id) }}" class="rounded border px-3 py-2 text-sm">导出全班登记表 CSV</a>
 </div>
 <h2 class="mb-2 font-medium">导入 CSV（覆盖当前名册）</h2>
-<form method="post" action="{{ url_for('teacher.roster_import') }}" enctype="multipart/form-data" class="mb-8 flex flex-wrap items-end gap-2">
+<form method="post" action="{{ url_for('teacher.roster_import', course_id=course.course_id) }}" enctype="multipart/form-data" class="mb-8 flex flex-wrap items-end gap-2">
   {{ import_form.hidden_tag() }}
   {{ import_form.file(class_="text-sm") }}
   {{ import_form.submit(class_="rounded bg-indigo-600 px-3 py-2 text-sm text-white") }}
 </form>
 <h2 class="mb-2 font-medium">手动添加学生</h2>
-<form method="post" action="{{ url_for('teacher.roster_add') }}" class="mb-8 grid max-w-xl gap-2 sm:grid-cols-2">
+<form method="post" action="{{ url_for('teacher.roster_add', course_id=course.course_id) }}" class="mb-8 grid max-w-xl gap-2 sm:grid-cols-2">
   {{ add_form.hidden_tag() }}
   {{ add_form.seq.label(class_="text-sm") }} {{ add_form.seq(class_="rounded border px-2 py-1") }}
   {{ add_form.college.label(class_="text-sm") }} {{ add_form.college(class_="rounded border px-2 py-1") }}
@@ -30,8 +30,8 @@
   {% for a in course.assignments %}
   <div class="flex flex-wrap items-center gap-2 rounded border border-slate-200 bg-white px-2 py-2">
     <span class="text-sm font-medium text-slate-800">{{ a.title }}</span>
-    <a href="{{ url_for('teacher.assignment_submission_status', assignment_id=a.id) }}" class="text-sm text-indigo-600 hover:underline">提交进度</a>
-    <a href="{{ url_for('teacher.download_zip', assignment_id=a.id) }}" class="rounded border border-slate-300 px-2 py-1 text-sm hover:bg-slate-50">ZIP</a>
+    <a href="{{ url_for('teacher.assignment_submission_status', course_id=course.course_id, assignment_id=a.id) }}" class="text-sm text-indigo-600 hover:underline">提交进度</a>
+    <a href="{{ url_for('teacher.download_zip', course_id=course.course_id, assignment_id=a.id) }}" class="rounded border border-slate-300 px-2 py-1 text-sm hover:bg-slate-50">ZIP</a>
   </div>
   {% endfor %}
 </div>
@@ -53,11 +53,11 @@
         <td class="max-w-xs truncate px-2 py-2 font-mono text-xs">{{ r['密码哈希'] }}</td>
         <td class="px-2 py-2">
           <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
-            <form method="post" action="{{ url_for('teacher.roster_reset_password', student_id=r.学号) }}" onsubmit="return confirm('确定重置该学生密码？将生成新密码，旧密码立即失效。');">
+            <form method="post" action="{{ url_for('teacher.roster_reset_password', course_id=course.course_id, student_id=r.学号) }}" onsubmit="return confirm('确定重置该学生密码？将生成新密码，旧密码立即失效。');">
               {{ reset_password_form.hidden_tag() }}
               {{ reset_password_form.submit(class_="text-xs text-indigo-700 underline") }}
             </form>
-            <form method="post" action="{{ url_for('teacher.roster_delete', student_id=r.学号) }}" onsubmit="return confirm('确定删除该学生？');">
+            <form method="post" action="{{ url_for('teacher.roster_delete', course_id=course.course_id, student_id=r.学号) }}" onsubmit="return confirm('确定删除该学生？');">
               {{ delete_form.hidden_tag() }}
               {{ delete_form.submit(class_="text-xs text-red-700 underline") }}
             </form>

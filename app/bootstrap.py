@@ -1,4 +1,3 @@
-"""Seed roster migration and directory bootstrap."""
 from __future__ import annotations
 
 import csv
@@ -6,11 +5,17 @@ import shutil
 from pathlib import Path
 
 from app.course_loader import ensure_assignment_dirs, load_course_config
+from app.course_registry import (
+    course_config_path,
+    course_roster_path,
+    course_storage_root,
+    create_course,
+    ensure_course_registry,
+)
 from app.roster_store import save_roster_atomic, strip_bom
 
 
 def ensure_course_config(project_root: Path, course_config_path: Path) -> None:
-    """If runtime course.yaml is missing, copy bundled default from repo config/."""
     if course_config_path.exists() and course_config_path.stat().st_size > 0:
         return
     bundled = project_root / "config" / "course.yaml"
@@ -19,9 +24,7 @@ def ensure_course_config(project_root: Path, course_config_path: Path) -> None:
         shutil.copyfile(bundled, course_config_path)
     else:
         course_config_path.write_text(
-            "course_id: default-course\n"
-            "course_title: Course\n"
-            "assignments: []\n",
+            "course_id: default-course\ncourse_title: Course\nassignments: []\n",
             encoding="utf-8",
         )
 
@@ -34,7 +37,6 @@ def _norm_header(k: str | None) -> str:
 
 
 def migrate_roster_from_seed(project_root: Path, roster_path: Path) -> None:
-    """If roster missing/empty, import from 点名册.csv when present."""
     if roster_path.exists() and roster_path.stat().st_size > 0:
         return
     seed = project_root / "点名册.csv"
@@ -48,8 +50,7 @@ def migrate_roster_from_seed(project_root: Path, roster_path: Path) -> None:
     for i, row in enumerate(reader, start=1):
         norm: dict[str, str] = {}
         for k, v in row.items():
-            nk = _norm_header(k)
-            norm[nk] = (v or "").strip()
+            norm[_norm_header(k)] = (v or "").strip()
         seq = norm.get("序号") or norm.get("") or str(i)
         rows_out.append(
             {
@@ -69,3 +70,36 @@ def bootstrap_storage(course_config: Path, storage_root: Path) -> dict:
     cfg = load_course_config(course_config)
     ensure_assignment_dirs(storage_root, cfg.get("assignments", []))
     return cfg
+
+
+def bootstrap_courses(project_root: Path, data_dir: Path) -> dict:
+    registry = ensure_course_registry(data_dir)
+    if not registry.get("courses"):
+        bundled = project_root / "config" / "course.yaml"
+        if bundled.exists():
+            seeded = load_course_config(bundled)
+            cid = str(seeded.get("course_id", "default-course"))
+            title = str(seeded.get("course_title", cid))
+        else:
+            cid = "default-course"
+            title = "Course"
+        create_course(data_dir, cid, title)
+        cfg_path = course_config_path(data_dir, cid)
+        ensure_course_config(project_root, cfg_path)
+        if bundled.exists():
+            data = load_course_config(cfg_path)
+            data["course_id"] = cid
+            data["course_title"] = title
+            from app.course_store import save_course_config_atomic
+
+            save_course_config_atomic(cfg_path, data)
+        migrate_roster_from_seed(project_root, course_roster_path(data_dir, cid))
+        bootstrap_storage(cfg_path, course_storage_root(data_dir, cid))
+        registry = ensure_course_registry(data_dir)
+    for course in registry.get("courses", []):
+        cid = course["id"]
+        cfg_path = course_config_path(data_dir, cid)
+        ensure_course_config(project_root, cfg_path)
+        migrate_roster_from_seed(project_root, course_roster_path(data_dir, cid))
+        bootstrap_storage(cfg_path, course_storage_root(data_dir, cid))
+    return registry

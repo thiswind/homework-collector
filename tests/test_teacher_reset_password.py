@@ -5,21 +5,23 @@ import re
 
 from werkzeug.security import check_password_hash
 
+from app.course_registry import course_roster_path
 from app.roster_store import find_student, load_roster
 
 
-def test_teacher_reset_password_updates_hash(client, app):
+def test_teacher_reset_password_updates_hash(client, app, default_course_id):
     with client.session_transaction() as sess:
         sess["teacher"] = True
     cfg = app.extensions["cfg"]
+    roster = course_roster_path(cfg.DATA_DIR, default_course_id)
     sid = "2026999901"
-    rows_before = load_roster(cfg.ROSTER_PATH)
+    rows_before = load_roster(roster)
     row = find_student(rows_before, sid)
     assert row is not None
     old_hash = (row.get("密码哈希") or "").strip()
 
     resp = client.post(
-        f"/teacher/roster/reset-password/{sid}",
+        f"/teacher/courses/{default_course_id}/roster/reset-password/{sid}",
         data={"csrf_token": "dummy", "submit": "1"},
         follow_redirects=True,
     )
@@ -31,7 +33,7 @@ def test_teacher_reset_password_updates_hash(client, app):
     plain = m.group(1).strip()
     assert len(plain) >= 8
 
-    rows_after = load_roster(cfg.ROSTER_PATH)
+    rows_after = load_roster(roster)
     row2 = find_student(rows_after, sid)
     new_hash = (row2.get("密码哈希") or "").strip()
     assert new_hash
@@ -39,11 +41,11 @@ def test_teacher_reset_password_updates_hash(client, app):
     assert check_password_hash(new_hash, plain)
 
 
-def test_teacher_reset_unknown_student_redirects(client, app):
+def test_teacher_reset_unknown_student_redirects(client, default_course_id):
     with client.session_transaction() as sess:
         sess["teacher"] = True
     resp = client.post(
-        "/teacher/roster/reset-password/nosuch999",
+        f"/teacher/courses/{default_course_id}/roster/reset-password/nosuch999",
         data={"csrf_token": "dummy", "submit": "1"},
         follow_redirects=True,
     )
@@ -51,9 +53,9 @@ def test_teacher_reset_unknown_student_redirects(client, app):
     assert "名册中无此学号" in resp.get_data(as_text=True)
 
 
-def test_anonymous_cannot_reset_password(client):
+def test_anonymous_cannot_reset_password(client, default_course_id):
     r = client.post(
-        "/teacher/roster/reset-password/2026999901",
+        f"/teacher/courses/{default_course_id}/roster/reset-password/2026999901",
         data={"submit": "1"},
         follow_redirects=False,
     )

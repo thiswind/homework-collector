@@ -1,21 +1,20 @@
 # Security Policy
 
-## Supported Versions
+This project stores course rosters, password hashes, assignment templates, and student submissions on disk. Treat the runtime data directory as sensitive.
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+## Supported versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+Security fixes are applied to the current `master` branch of this repository.
 
-## Reporting a Vulnerability
+## Reporting vulnerabilities
 
-Use this section to tell people how to report a vulnerability.
+Report vulnerabilities privately to the repository owner or maintainer. Do not publish student data, teacher credentials, `.env` files, submission archives, or screenshots containing real rosters in public issues.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+## Operational requirements
+
+- Set a strong `SECRET_KEY` in production.
+- Set a strong `TEACHER_PASSWORD` outside the repository.
+- Never commit `.env`, `data/`, runtime course directories, rosters, templates, or submissions.
+- Restrict filesystem access to `DATA_DIR` on the server.
+- Run the app behind HTTPS or a trusted reverse proxy for real deployments.
+- Do not expose the gunicorn port publicly; bind it to `127.0.0.1` and proxy through nginx.

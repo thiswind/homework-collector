@@ -37,6 +37,7 @@ def validate_and_build_course_dict(
     course_title: str,
     assignment_ids: list[str],
     assignment_titles: list[str],
+    existing_assignments: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     cid = validate_course_id(course_id)
     title = (course_title or "").strip()
@@ -46,11 +47,14 @@ def validate_and_build_course_dict(
         raise ValueError("assignment rows mismatch")
     if not assignment_ids:
         raise ValueError("At least one assignment is required")
+    existing_templates = {
+        str(a.get("id")): a.get("template")
+        for a in (existing_assignments or [])
+        if isinstance(a, dict) and a.get("id")
+    }
     seen: set[str] = set()
     assignments: list[dict[str, Any]] = []
-    for order, (raw_id, raw_title) in enumerate(
-        zip(assignment_ids, assignment_titles, strict=True), start=1
-    ):
+    for order, (raw_id, raw_title) in enumerate(zip(assignment_ids, assignment_titles), start=1):
         aid = validate_assignment_id(raw_id)
         t = (raw_title or "").strip()
         if not t:
@@ -58,7 +62,7 @@ def validate_and_build_course_dict(
         if aid in seen:
             raise ValueError(f"Duplicate assignment id: {aid}")
         seen.add(aid)
-        assignments.append({"id": aid, "title": t, "order": order})
+        assignments.append({"id": aid, "title": t, "order": order, "template": existing_templates.get(aid)})
     return {"course_id": cid, "course_title": title, "assignments": assignments}
 
 
